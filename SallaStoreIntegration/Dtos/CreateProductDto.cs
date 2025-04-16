@@ -37,6 +37,25 @@ namespace ExternalStores.DTO.Salla
 
         [JsonProperty("brand_id")]
         public long BrandId { get; set; }
+        [JsonProperty("images")]
+        public List<imageDto> Images { get; set; }
 
     }
+    public class imageDto
+    {
+        [JsonProperty("original")]
+        public string Original { get; set; }
+
+        [JsonProperty("thumbnail")]
+        public string? Thumbnail { get; set; }
+        [JsonProperty("alt")]
+        public string? Alt { get; set; }
+        [JsonProperty("default")]
+        public bool? Default { get; set; }
+        [JsonProperty("sort")]
+        public int? Sort { get; set; }
+    }
+
+
+
 }
