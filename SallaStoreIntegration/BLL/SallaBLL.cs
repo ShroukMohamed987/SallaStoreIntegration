@@ -189,7 +189,7 @@ namespace SallaStoreIntegration.BLL
 
         public async Task<bool> UpdateCategoriesAsync(string token, int id, UpdateCategoryInputDto inputDto)
         {
-           // var response = new CategoryUpdateResultDto();
+            // var response = new CategoryUpdateResultDto();
             try
             {
                 var client = _httpClientFactory.CreateClient(ExternalStoresProviderEnum.Salla.ToString());
@@ -198,7 +198,7 @@ namespace SallaStoreIntegration.BLL
 
                 string data = JsonConvert.SerializeObject(inputDto);
 
-                
+
                 var content = new StringContent(data, Encoding.UTF8, "application/json");
 
                 HttpResponseMessage result = await client.PutAsync($"{category}/{id}", content);
@@ -211,7 +211,8 @@ namespace SallaStoreIntegration.BLL
                 {
                     return false;
                 }
-            }catch(Exception e)
+            }
+            catch (Exception e)
             {
                 //response.Message = e.Message;
                 return false;
@@ -250,7 +251,11 @@ namespace SallaStoreIntegration.BLL
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 // Serialize the categoryInput object to JSON
-                string data = JsonConvert.SerializeObject(inputDto);
+                string data = JsonConvert.SerializeObject(inputDto, new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+
 
                 // Create a StringContent with the serialized data
                 var content = new StringContent(data, Encoding.UTF8, "application/json");
@@ -510,7 +515,7 @@ namespace SallaStoreIntegration.BLL
             var data = JsonConvert.SerializeObject(inputDto);
             var content = new StringContent(data, Encoding.UTF8);
 
-            HttpResponseMessage response = await client.PostAsync("brands",content);
+            HttpResponseMessage response = await client.PostAsync("brands", content);
             if (response.IsSuccessStatusCode)
             {
                 return true;
@@ -526,7 +531,7 @@ namespace SallaStoreIntegration.BLL
             var client = _httpClientFactory.CreateClient(ExternalStoresProviderEnum.Salla.ToString());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var data = JsonConvert.SerializeObject(inputDto);
-            var content = new StringContent(data,Encoding.UTF8, "application/json");
+            var content = new StringContent(data, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await client.PostAsync("customers", content);
             if (response.IsSuccessStatusCode)
             {
@@ -540,32 +545,32 @@ namespace SallaStoreIntegration.BLL
             var client = _httpClientFactory.CreateClient(ExternalStoresProviderEnum.Salla.ToString());
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             HttpResponseMessage respone = await client.GetAsync("customers");
-            if(respone.IsSuccessStatusCode)
+            if (respone.IsSuccessStatusCode)
             {
                 string content = await respone.Content.ReadAsStringAsync();
                 var resultJson = JObject.Parse(content);
-               List<CustomerResponseDto> customers = JsonConvert.DeserializeObject<List<CustomerResponseDto>>(resultJson["data"].ToString());
+                List<CustomerResponseDto> customers = JsonConvert.DeserializeObject<List<CustomerResponseDto>>(resultJson["data"].ToString());
                 return customers;
             }
             return new List<CustomerResponseDto> { };
         }
 
-        public  async Task<CustomerResponseDto> GetCustomerByIdAsync(string token, int id)
+        public async Task<CustomerResponseDto> GetCustomerByIdAsync(string token, int id)
         {
-           
+
             var client = _httpClientFactory.CreateClient(ExternalStoresProviderEnum.Salla.ToString());
 
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             HttpResponseMessage response = await client.GetAsync($"customers/{id}");
-            if(response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync();
                 var jsonData = JObject.Parse(content);
                 CustomerResponseDto customer = JsonConvert.DeserializeObject<CustomerResponseDto>(jsonData["data"].ToString());
                 return customer;
             }
-            return new CustomerResponseDto { }; 
+            return new CustomerResponseDto { };
         }
 
         public async Task<bool> UpdateCustomerAsync(string token, int id, CreateCustomerDTO inputDto)
@@ -574,10 +579,10 @@ namespace SallaStoreIntegration.BLL
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var data = JsonConvert.SerializeObject(inputDto);
-            var content = new StringContent(data,Encoding.UTF8, "application/json");
+            var content = new StringContent(data, Encoding.UTF8, "application/json");
             HttpResponseMessage response = await client.PutAsync($"customers/{id}", content);
 
-            if(response.IsSuccessStatusCode)
+            if (response.IsSuccessStatusCode)
             {
                 return true;
             }
