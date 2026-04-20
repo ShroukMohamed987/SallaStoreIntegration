@@ -1,0 +1,14 @@
+//using SallaStoreIntegration.Dtos;
+using SallaStoreIntegration.Dtos.Orders;
+
+namespace SallaStoreIntegration.Repositories.Order
+{
+    public interface IOrderRepository
+    {
+        Task<List<Dtos.Orders.OrderResultDto>> GetOrdersAsync(string token, ListOrdersFilterDto filter = null);
+        Task<Dtos.Orders.OrderResultDto> GetOrderAsync(long orderId, string token);
+        Task<bool> UpdateOrderStatusAsync(string token, int id, UpdateOrderStatusInputDto inputDto);
+        Task<List<StatusResultDto>> GetOrderStatusAsync(string token);
+        Task<string> ExecuteOrderActionsAsync(OrderActionsRequestDto request, string token);
+    }
+}

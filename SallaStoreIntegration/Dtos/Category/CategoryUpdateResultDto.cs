@@ -1,10 +1,9 @@
 ﻿using Newtonsoft.Json;
 
-namespace ExternalStores.DTO.Salla
+namespace SallaStoreIntegration.Dtos.Category
 {
-    public class CategoryResultDto
+    public class CategoryUpdateResultDto
     {
-
         [JsonProperty("id")]
         public int Id { get; set; }
 
@@ -14,3 +13,4 @@ namespace ExternalStores.DTO.Salla
         public string? Message { get; set; }
     }
 }
+

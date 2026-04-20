@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace SallaStoreIntegration.Dtos
+namespace SallaStoreIntegration.Dtos.Orders
 {
     public class UpdateOrderStatusInputDto
     {

@@ -1,4 +1,4 @@
-﻿namespace ExternalStores.DTO.Salla
+﻿namespace SallaStoreIntegration.Dtos.Product
 {
     public class ProductResultDto
     {

@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace ExternalStores.DTO.Salla
+namespace SallaStoreIntegration.Dtos.Category
 {
     public class CreateCategoryDto
     {

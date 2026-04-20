@@ -1,4 +1,9 @@
-using SallaStoreIntegration.BLL;
+using SallaStoreIntegration.Repositories.Auth;
+using SallaStoreIntegration.Repositories.Brand;
+using SallaStoreIntegration.Repositories.Category;
+using SallaStoreIntegration.Repositories.Customer;
+using SallaStoreIntegration.Repositories.Order;
+using SallaStoreIntegration.Repositories.Product;
 using SallaStoreIntegration.Setting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,12 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
-
-
 
 #region SallaConfig
 builder.Services.AddHttpClient(ExternalStoresProviderEnum.Salla.ToString(), client =>
@@ -21,11 +25,16 @@ builder.Services.AddHttpClient(ExternalStoresProviderEnum.Salla.ToString(), clie
 });
 #endregion
 
+#region Repositories
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+#endregion
 
-
-builder.Services.AddScoped<ISallaBLL, SallaBLL>();
-
-#region Congfig
+#region Config
 builder.Services.Configure<ExternalStoresSetting>(builder.Configuration.GetSection(AppSettingEnum.ExternalStoresSetting.ToString()));
 #endregion
 

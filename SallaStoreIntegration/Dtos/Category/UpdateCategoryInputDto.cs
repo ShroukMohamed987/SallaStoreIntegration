@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace SallaStoreIntegration.Dtos
+namespace SallaStoreIntegration.Dtos.Category
 {
     public class UpdateCategoryInputDto
     {
