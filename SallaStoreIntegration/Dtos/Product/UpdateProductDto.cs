@@ -1,47 +1,51 @@
-﻿using SallaStoreIntegration.Enums.Products;
-using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using SallaStoreIntegration.Enums.Products;
+
 
 namespace SallaStoreIntegration.Dtos.Product
 {
     public class UpdateProductDto
     {
         public int Id { get; set; }
-        [JsonPropertyName("name")]
+
+        [JsonProperty("name")]
         public string? Name { get; set; }
 
-        [JsonPropertyName("price")]
+        [JsonProperty("price")]
         public decimal? Price { get; set; }
 
-        [JsonPropertyName("status")]
-        [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty("status")]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ProductStatusEnum? Status { get; set; }
 
-        [JsonPropertyName("product_type")]
-        [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonProperty("product_type")]
+        [JsonConverter(typeof(StringEnumConverter))]
         public ProductTypeEnum? product_type { get; set; }
 
-        [JsonPropertyName("quantity")]
+        [JsonProperty("quantity")]
         public int? Quantity { get; set; }
 
-        [JsonPropertyName("categories")]
+        [JsonProperty("categories")]
         public List<long>? Categories { get; set; }
 
-        [JsonPropertyName("sale_price")]
+        [JsonProperty("sale_price")]
         public decimal? sale_price { get; set; }
 
-        [JsonPropertyName("cost_price")]
+        [JsonProperty("cost_price")]
         public decimal? cost_price { get; set; }
 
-        [JsonPropertyName("sku")]
+        [JsonProperty("sku")]
         public string? SKU { get; set; }
 
-        [JsonPropertyName("enable_upload_image")]
-        [System.Text.Json.Serialization.JsonIgnore]
-        public bool  EnableUploadImage => true;
+        [JsonProperty("enable_upload_image")]
+        [JsonIgnore]  // Newtonsoft's JsonIgnore
+        public bool EnableUploadImage => true;
 
-        [JsonPropertyName("brand_id")]
+        [JsonProperty("brand_id")]
         public long? BrandId { get; set; }
-        [JsonPropertyName("images")]
+
+        [JsonProperty("images")]
         public List<imageDto>? Images { get; set; }
     }
 }

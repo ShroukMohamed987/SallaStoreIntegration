@@ -33,13 +33,22 @@ namespace SallaStoreIntegration.Repositories.Base
             return client;
         }
 
+        //protected HttpClient CreateDefaultClient(string token = null)
+        //{
+        //    var client = _httpClientFactory.CreateClient();
+        //    if (!string.IsNullOrEmpty(token))
+        //    {
+        //        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        //    }
+        //    return client;
+        //}
         protected HttpClient CreateDefaultClient(string token = null)
         {
             var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromMinutes(2); // ? add this
             if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+                client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token);
             return client;
         }
 
@@ -99,11 +108,12 @@ namespace SallaStoreIntegration.Repositories.Base
             {
                 var client = CreateDefaultClient(token);
                 var json = JsonConvert.SerializeObject(request);
+               
                 var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
 
                 var result = await client.PostAsync($"{BaseUrl}/{endpoint}", httpContent);
                 var content = await result.Content.ReadAsStringAsync();
-
+                
                 if (result.IsSuccessStatusCode)
                 {
                     return JsonConvert.DeserializeObject<T>(
@@ -195,8 +205,29 @@ namespace SallaStoreIntegration.Repositories.Base
                 return false;
             }
         }
-
-        protected async Task<bool> DeleteAsync(string endpoint, string token)
+        protected async Task<T> DeleteAsync<T>(string endpoint, string token) where T : class, new()
+        {
+            try
+            {
+                var client = CreateDefaultClient(token);
+                var result = await client.DeleteAsync($"{BaseUrl}/{endpoint}");
+                var content = await result.Content.ReadAsStringAsync();
+                if (result.IsSuccessStatusCode)
+                {
+                    return JsonConvert.DeserializeObject<T>(content, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore,
+                        Converters = new List<Newtonsoft.Json.JsonConverter> { new StringEnumConverter() }
+                    });
+                }
+                return CreateErrorResponse<T>(content, result.StatusCode);
+            }
+            catch (Exception e)
+            {
+                return CreateExceptionResponse<T>(e.Message);
+            }
+        }
+        protected async Task<bool> BoolDeleteAsync(string endpoint, string token)
         {
             try
             {
@@ -223,7 +254,7 @@ namespace SallaStoreIntegration.Repositories.Base
             }
         }
 
-        private T CreateErrorResponse<T>(string content, System.Net.HttpStatusCode statusCode) where T : class, new()
+        public T CreateErrorResponse<T>(string content, System.Net.HttpStatusCode statusCode) where T : class, new()
         {
             var instance = new T();
             var messageProperty = typeof(T).GetProperty("Message");
@@ -234,7 +265,7 @@ namespace SallaStoreIntegration.Repositories.Base
             return instance;
         }
 
-        private T CreateExceptionResponse<T>(string message) where T : class, new()
+        public T CreateExceptionResponse<T>(string message) where T : class, new()
         {
             var instance = new T();
             var messageProperty = typeof(T).GetProperty("Message");
