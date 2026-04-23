@@ -38,7 +38,7 @@ namespace SallaStoreIntegration.Repositories.Category
 
         public async Task<bool> DeleteCategoryAsync(string token, long categoryId)
         {
-            return await DeleteAsync($"categories/{categoryId}", token);
+            return await BoolDeleteAsync($"categories/{categoryId}", token);
         }
 
         public async Task<List<CategoryResultDto>> GetCategoryChildrenAsync(string token, long categoryId)

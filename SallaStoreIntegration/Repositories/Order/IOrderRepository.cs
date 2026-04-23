@@ -1,5 +1,6 @@
 //using SallaStoreIntegration.Dtos;
 using SallaStoreIntegration.Dtos.Orders;
+using SallaStoreIntegration.Dtos.Response;
 
 namespace SallaStoreIntegration.Repositories.Order
 {
@@ -10,5 +11,7 @@ namespace SallaStoreIntegration.Repositories.Order
         Task<bool> UpdateOrderStatusAsync(string token, int id, UpdateOrderStatusInputDto inputDto);
         Task<List<StatusResultDto>> GetOrderStatusAsync(string token);
         Task<string> ExecuteOrderActionsAsync(OrderActionsRequestDto request, string token);
+        Task<SallaBaseResponse<CreateOrderResponseDto>> CreateOrderAsync(CreateOrderRequestDto request, string token);
+        Task<SallaBaseResponse<RelocateOrderStockResponseDto>> RelocateOrderStockAsync(RelocateOrderStockRequestDto request, long orderId, string token);
     }
 }

@@ -1,9 +1,12 @@
+using FluentValidation;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SallaStoreIntegration.Dtos.Orders;
+using SallaStoreIntegration.Dtos.Response;
 using SallaStoreIntegration.Repositories.Base;
 using SallaStoreIntegration.Setting;
+using SallaStoreIntegration.Validation;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -58,6 +61,76 @@ namespace SallaStoreIntegration.Repositories.Order
             catch (Exception e)
             {
                 return new List<OrderResultDto> { new OrderResultDto { Message = e.Message } };
+            }
+        }
+
+        public async Task<SallaBaseResponse<CreateOrderResponseDto>> CreateOrderAsync(CreateOrderRequestDto request, string token)
+        {
+            var validationResult = await new CreateOrderValidator().ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ValidationException(errors);
+            }
+
+            try
+            {
+                var client = CreateDefaultClient(token);
+
+                var json = JsonConvert.SerializeObject(request, new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+                var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var result = await client.PostAsync($"{BaseUrl}/orders", httpContent);
+                var content = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"CreateOrder Status: {result.StatusCode}");
+                Console.WriteLine($"CreateOrder Response: {content}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<CreateOrderResponseDto>>(content)
+                    ?? new SallaBaseResponse<CreateOrderResponseDto> { Status = (int)result.StatusCode };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"CreateOrder Exception: {e}");
+                return CreateExceptionResponse<SallaBaseResponse<CreateOrderResponseDto>>(e.Message);
+            }
+        }
+
+        public async Task<SallaBaseResponse<RelocateOrderStockResponseDto>> RelocateOrderStockAsync(RelocateOrderStockRequestDto request, long orderId, string token)
+        {
+            var validationResult = await new RelocateOrderStockValidator().ValidateAsync(request);
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ValidationException(errors);
+            }
+
+            try
+            {
+                var client = CreateDefaultClient(token);
+
+                var json = JsonConvert.SerializeObject(request, new JsonSerializerSettings
+                {
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+                var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var result = await client.PostAsync($"{BaseUrl}/orders/{orderId}/inventory/relocate", httpContent);
+                var content = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"RelocateOrderStock Status: {result.StatusCode}");
+                Console.WriteLine($"RelocateOrderStock Response: {content}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<RelocateOrderStockResponseDto>>(content)
+                    ?? new SallaBaseResponse<RelocateOrderStockResponseDto> { Status = (int)result.StatusCode };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"RelocateOrderStock Exception: {e}");
+                return CreateExceptionResponse<SallaBaseResponse<RelocateOrderStockResponseDto>>(e.Message);
             }
         }
 

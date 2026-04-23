@@ -2,17 +2,29 @@
 
 namespace SallaStoreIntegration.Dtos.Brands
 {
+  
     public class CreateBrandDto
     {
-        [JsonProperty("name")]
-        public string  Name { get; set; }
+        public string Name { get; set; }
 
-        [JsonProperty("logo")]
-        public string Logo { get; set; }
-        [JsonProperty("banner")]
-        public string banner { get; set; }
+        public IFormFile Logo { get; set; }      // required
+        public IFormFile? Banner { get; set; }   // optional
 
-        [JsonProperty("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
+        public string? MetadataTitle { get; set; }
+        public string? MetadataDescription { get; set; }
+        public string? MetadataUrl { get; set; }
+
+        public string? TranslationsJson { get; set; }
+    }
+    public class TranslationDto
+    {
+        public string Locale { get; set; }  // "en"
+
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public string? MetadataTitle { get; set; }
+        public string? MetadataDescription { get; set; }
+        public string? MetadataUrl { get; set; }
     }
 }

@@ -5,6 +5,7 @@ using SallaStoreIntegration.Dtos.Category;
 using SallaStoreIntegration.Dtos.Customers;
 using SallaStoreIntegration.Dtos.Orders;
 using SallaStoreIntegration.Dtos.Product;
+using SallaStoreIntegration.Dtos.Product.Image;
 using SallaStoreIntegration.Enums.Products;
 using SallaStoreIntegration.Repositories.Auth;
 using SallaStoreIntegration.Repositories.Brand;
@@ -172,6 +173,107 @@ namespace DexefExternalStores.API.Controllers
             var result = await _productRepository.ChangeProductStatusAsync(inputDto, token);
             return Ok(result);
         }
+        [HttpPost("UpdateProductBySku")]
+        public async Task<IActionResult> UpdateProductBySku(UpdateProductDto inputDto,string sku, string token)
+        {
+            var result = await _productRepository.UpdateProductBySkuAsync(inputDto,sku, token);
+            return Ok(result);
+        }
+        [HttpPost("UpdateProductPriceBySku")]
+        public async Task<IActionResult> UpdateProductPriceBySku(UpdateProductPriceBySkuDto inputDo, string sku, string token)
+        {
+            var result = await _productRepository.UpdateProductPriceBySkuAsync(inputDo, sku, token);
+            return Ok(result);
+        }
+        [HttpPost("UpdateBulkProductPrice")]
+        public async Task<IActionResult> UpdateBulkProductPrice(BulkUpdateProductPriceRequestDto inputDto, string token)
+        {
+            var result = await _productRepository.UpdateBulkProductPriceAsync(inputDto, token);
+            return Ok(result);
+        }
+        [HttpPost("DeleteProduct/{productId}")]
+        public async Task<IActionResult> DeleteProduct(int productId, string token)
+        {
+            var result = await _productRepository.DeleteProducteAsync(productId, token);
+            return Ok(result);
+        }
+        [HttpPost("DeleteProductBySku/{sku}")]
+        public async Task<IActionResult> DeleteProductBySku(string sku, string token)
+        {
+            var result = await _productRepository.DeleteProducteBySkuAsync(sku, token);
+            return Ok(result);
+        }
+        // Controller
+        [HttpPost("ImportProducts")]
+        public async Task<IActionResult> ImportProducts(
+            IFormFile file,
+            [FromQuery] ImportProductEnum type,
+            [FromQuery] string token)
+        {
+            using var stream = file.OpenReadStream();
+            var result = await _productRepository.ImportProducteAsync(stream, file.FileName, type, token);
+            return Ok(result);
+        }
+
+        #region productImages
+        [HttpPost("AttachImageBySku")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AttachImageBySku(
+            [FromForm] AttachImageFormDto photo,
+            [FromQuery] string sku,
+            [FromQuery] string token)
+        {
+            
+
+            var result = await _productRepository.AttachImageBySkuAsync(
+                photo, sku, token);
+
+            return Ok(result);
+        }
+
+        [HttpPost("AttachImageByProductId")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> AttachImageByProductId(
+            [FromForm] AttachImageByProductIdFormDto form,
+            [FromQuery] long productId,
+            [FromQuery] string token)
+        {
+            var result = await _productRepository.AttachImageByProductIdAsync(form, productId, token);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateImage")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateImage(
+            [FromForm] UpdateImageFormDto form,
+            [FromQuery] string imageId,
+            [FromQuery] string token)
+        {
+            var result = await _productRepository.UpdateImageAsync(form, imageId, token);
+            return Ok(result);
+        }
+        [HttpPost("DeleteImage")]
+        
+        public async Task<IActionResult> DeleteImage(
+          
+           [FromQuery] string imageId,
+           [FromQuery] string token)
+        {
+            var result = await _productRepository.DeleteImageAsync( imageId, token);
+            return Ok(result);
+        }
+        [HttpPost("AttachYoutubeVideo")]
+
+        public async Task<IActionResult> AttachYoutubeVideo(
+            AttachVideoRequestDto inputDto,
+           [FromQuery] int productId,
+           [FromQuery] string token)
+        {
+            var result = await _productRepository.AttachYoutubeVideoAsync(inputDto,productId, token);
+            return Ok(result);
+        }
+
+        #endregion
         #endregion
 
         #region Orders
@@ -218,13 +320,55 @@ namespace DexefExternalStores.API.Controllers
             var result = await _orderRepository.ExecuteOrderActionsAsync(inputDto, token);
             return Ok(result);
         }
+
+        [HttpPost("CreateOrder")]
+        public async Task<IActionResult> CreateOrder(
+            [FromBody] CreateOrderRequestDto inputDto,
+            [FromQuery] string token)
+        {
+            var result = await _orderRepository.CreateOrderAsync(inputDto, token);
+            return Ok(result);
+        }
+
+        [HttpPost("RelocateOrderStock/{orderId}")]
+        public async Task<IActionResult> RelocateOrderStock(
+            long orderId,
+            [FromBody] RelocateOrderStockRequestDto inputDto,
+            [FromQuery] string token)
+        {
+            var result = await _orderRepository.RelocateOrderStockAsync(inputDto, orderId, token);
+            return Ok(result);
+        }
         #endregion
 
         #region Brands
-        [HttpPost("brands")]
-        public async Task<IActionResult> CreateBrand(string token, CreateBrandDto inputDto)
+        [HttpPost("brand/create")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> CreateBrand([FromQuery] string token, [FromForm] CreateBrandDto dto)
         {
-            return Ok(await _brandRepository.CreateBrandAsync(inputDto, token));
+            return Ok(await _brandRepository.CreateBrandAsync(dto, token));
+        }
+
+        [HttpGet("Getbrands")]
+        public async Task<IActionResult> ListBrands([FromQuery] string token, [FromQuery] ListBrandsFilterDto filter)
+        {
+            return Ok(await _brandRepository.ListBrandsAsync(filter, token));
+        }
+        [HttpGet("GetbrandDetails")]
+        public async Task<IActionResult> GetbrandDetails([FromQuery] string token, [FromQuery] int brandId , string? with)
+        {
+            return Ok(await _brandRepository.GetBrandDetailsAsync(brandId,with, token));
+        }
+        [HttpPost("brand/update")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateBrand([FromQuery] string token,int brandId, [FromForm] UpdateBrandDto dto)
+        {
+            return Ok(await _brandRepository.UpdateBrandAsync(dto,brandId, token));
+        }
+        [HttpGet("DeleteBrand")]
+        public async Task<IActionResult> DeleteBrand([FromQuery] int brandId, string token )
+        {
+            return Ok(await _brandRepository.DeleteBrandAsync(brandId, token));
         }
         #endregion
 

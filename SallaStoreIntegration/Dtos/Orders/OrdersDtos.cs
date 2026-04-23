@@ -9,35 +9,35 @@ namespace SallaStoreIntegration.Dtos.Orders
     }
     // ===== Request DTOs =====
 
-    public class CreateOrderRequestDto
-    {
-        [JsonPropertyName("customer")]
-        public OrderCustomerDto Customer { get; set; }
+    //public class CreateOrderRequestDto
+    //{
+    //    [JsonPropertyName("customer")]
+    //    public OrderCustomerDto Customer { get; set; }
 
-        [JsonPropertyName("receiver")]
-        public OrderReceiverDto Receiver { get; set; }
+    //    [JsonPropertyName("receiver")]
+    //    public OrderReceiverDto Receiver { get; set; }
 
-        [JsonPropertyName("delivery_method")]
-        public string DeliveryMethod { get; set; }
+    //    [JsonPropertyName("delivery_method")]
+    //    public string DeliveryMethod { get; set; }
 
-        [JsonPropertyName("branch_id")]
-        public long? BranchId { get; set; }
+    //    [JsonPropertyName("branch_id")]
+    //    public long? BranchId { get; set; }
 
-        [JsonPropertyName("courier_id")]
-        public string CourierId { get; set; }
+    //    [JsonPropertyName("courier_id")]
+    //    public string CourierId { get; set; }
 
-        [JsonPropertyName("ship_to")]
-        public OrderShipToDto ShipTo { get; set; }
+    //    [JsonPropertyName("ship_to")]
+    //    public OrderShipToDto ShipTo { get; set; }
 
-        [JsonPropertyName("payment")]
-        public OrderPaymentDto Payment { get; set; }
+    //    [JsonPropertyName("payment")]
+    //    public OrderPaymentDto Payment { get; set; }
 
-        [JsonPropertyName("products")]
-        public List<OrderProductDto> Products { get; set; }
+    //    [JsonPropertyName("products")]
+    //    public List<OrderProductDto> Products { get; set; }
 
-        [JsonPropertyName("coupon_code")]
-        public string CouponCode { get; set; }
-    }
+    //    [JsonPropertyName("coupon_code")]
+    //    public string CouponCode { get; set; }
+    //}
 
     public class OrderCustomerDto
     {
@@ -229,17 +229,17 @@ namespace SallaStoreIntegration.Dtos.Orders
         public List<long> OrderIds { get; set; }
         public List<int> OrderStatus { get; set; }
     }
-    public class RelocateOrderStockRequestDto
-    {
-        [JsonPropertyName("source")]
-        public long Source { get; set; }
+    //public class RelocateOrderStockRequestDto
+    //{
+    //    [JsonPropertyName("source")]
+    //    public long Source { get; set; }
 
-        [JsonPropertyName("destination")]
-        public long Destination { get; set; }
+    //    [JsonPropertyName("destination")]
+    //    public long Destination { get; set; }
 
-        [JsonPropertyName("items")]
-        public List<RelocateItemDto> Items { get; set; }
-    }
+    //    [JsonPropertyName("items")]
+    //    public List<RelocateItemDto> Items { get; set; }
+    //}
 
     public class RelocateItemDto
     {
