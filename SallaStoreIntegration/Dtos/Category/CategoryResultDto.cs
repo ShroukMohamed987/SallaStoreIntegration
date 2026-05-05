@@ -92,8 +92,12 @@ namespace SallaStoreIntegration.Dtos.Category
     {
         [JsonProperty("name")]
         public string Name { get; set; }  // Required
+
         [JsonProperty("show_in")]
         public CategoryShowInDto showIn { get; set; }
+
+        [JsonProperty("parent_id", NullValueHandling = NullValueHandling.Ignore)]
+        public long? ParentId { get; set; }
 
         //[JsonProperty("status")]
         //public string Status { get; set; }  // "active" or "hidden"
@@ -109,9 +113,6 @@ namespace SallaStoreIntegration.Dtos.Category
 
         //[JsonProperty("metadata_url")]
         //public string MetadataUrl { get; set; }
-
-        //[JsonProperty("parent_id")]
-        //public long? ParentId { get; set; }
 
         //[JsonProperty("sort_order")]
         //public int? SortOrder { get; set; }

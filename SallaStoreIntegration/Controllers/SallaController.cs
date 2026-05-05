@@ -124,6 +124,28 @@ namespace DexefExternalStores.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("GetAllCategories")]
+        public async Task<IActionResult> GetAllCategories([FromQuery] string token)
+        {
+            var result = await _categoryRepository.GetAllCategoriesAsync(token);
+            return Ok(result);
+        }
+
+        [HttpPost("UploadCategories")]
+        public async Task<IActionResult> UploadCategories([FromBody] List<CategoryNodeDto> categories, [FromQuery] string token)
+        {
+            var result = await _categoryRepository.UploadCategoriesAsync(token, categories);
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteCategories")]
+        public async Task<IActionResult> DeleteCategories([FromBody] List<long> categoryIds, [FromQuery] string token)
+        {
+            var result = await _categoryRepository.DeleteCategoriesAsync(token, categoryIds);
+            if (!result) return BadRequest("One or more categories failed to delete");
+            return Ok(result);
+        }
+
         [HttpGet("SearchCategories")]
         public async Task<IActionResult> SearchCategories(
             [FromQuery] string token,

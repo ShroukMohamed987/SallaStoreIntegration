@@ -5,7 +5,6 @@ using SallaStoreIntegration.Dtos;
 using SallaStoreIntegration.Dtos.Category;
 using SallaStoreIntegration.Repositories.Base;
 using SallaStoreIntegration.Setting;
-using System.Text;
 
 namespace SallaStoreIntegration.Repositories.Category
 {
@@ -19,6 +18,11 @@ namespace SallaStoreIntegration.Repositories.Category
         public async Task<List<CategoryResultDto>> GetCategoriesAsync(string token)
         {
             return await GetListAsync<CategoryResultDto>("categories", token);
+        }
+
+        public async Task<List<CategoryResultDto>> GetAllCategoriesAsync(string token)
+        {
+            return await GetAllPagesAsync<CategoryResultDto>("categories", token);
         }
 
         public async Task<CategoryResultDto> GetCategoryAsync(string token, long categoryId)
@@ -39,6 +43,70 @@ namespace SallaStoreIntegration.Repositories.Category
         public async Task<bool> DeleteCategoryAsync(string token, long categoryId)
         {
             return await BoolDeleteAsync($"categories/{categoryId}", token);
+        }
+
+        public async Task<bool> DeleteCategoriesAsync(string token, List<long> categoryIds)
+        {
+            if (categoryIds == null || categoryIds.Count == 0) return true;
+            var allOk = true;
+            foreach (var id in categoryIds)
+            {
+                var ok = await BoolDeleteAsync($"categories/{id}", token);
+                if (!ok) allOk = false;
+            }
+            return allOk;
+        }
+
+        public async Task<CategoryNodeDto> CreateCategoryNodeAsync(string token, CategoryNodeDto category, CategoryNodeDto parent = null)
+        {
+            // idempotency: try to find existing category by name (under same parent if known) before creating
+            var existing = await SearchCategoriesAsync(token, category.Name);
+            var match = existing?.FirstOrDefault(c =>
+                string.Equals(c.Name, category.Name, StringComparison.OrdinalIgnoreCase) &&
+                (parent?.Id == null || c.ParentId == parent.Id));
+
+            if (match != null && string.IsNullOrEmpty(match.Message))
+            {
+                category.Id = match.Id;
+                category.ParentId = match.ParentId;
+                return category;
+            }
+
+            var request = new CreateCategoryRequestDto
+            {
+                Name = category.Name,
+                ParentId = parent?.Id,
+                showIn = new CategoryShowInDto { App = true }
+            };
+
+            var created = await CreateCategoryAsync(token, request);
+            if (created == null || created.Id == 0)
+            {
+                category.Message = created?.Message ?? "Failed to create category";
+                return category;
+            }
+
+            category.Id = created.Id;
+            category.ParentId = created.ParentId;
+            return category;
+        }
+
+        public async Task<List<CategoryNodeDto>> UploadCategoriesAsync(string token, List<CategoryNodeDto> categories, CategoryNodeDto parent = null)
+        {
+            if (categories == null) return new List<CategoryNodeDto>();
+
+            foreach (var node in categories)
+            {
+                var created = await CreateCategoryNodeAsync(token, node, parent);
+                if (!string.IsNullOrEmpty(created.Message)) continue; // skip subtree on failure
+
+                if (node.Subcategories != null && node.Subcategories.Count > 0)
+                {
+                    await UploadCategoriesAsync(token, node.Subcategories, created);
+                }
+            }
+
+            return categories;
         }
 
         public async Task<List<CategoryResultDto>> GetCategoryChildrenAsync(string token, long categoryId)
