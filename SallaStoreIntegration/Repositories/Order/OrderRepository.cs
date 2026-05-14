@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SallaStoreIntegration.Dtos.OrderInvoice;
 using SallaStoreIntegration.Dtos.Orders;
 using SallaStoreIntegration.Dtos.Response;
 using SallaStoreIntegration.Repositories.Base;
@@ -62,6 +63,120 @@ namespace SallaStoreIntegration.Repositories.Order
             {
                 return new List<OrderResultDto> { new OrderResultDto { Message = e.Message } };
             }
+        }
+
+        // Direct port of WordPress OrdersBLL.GetAllPendingOrders — paginates Salla until empty.
+        // Salla expects status as an array of integer IDs: ?status[]=123&status[]=456
+        public async Task<List<OrderResultDto>> GetAllOrdersByStatusAsync(string token, List<int> statusIds, CancellationToken ct = default)
+        {
+            var all = new List<OrderResultDto>();
+            var page = 1;
+            const int perPage = 50;
+
+            try
+            {
+                var client = CreateDefaultClient(token);
+
+                var statusQuery = "";
+                if (statusIds != null && statusIds.Count > 0)
+                    statusQuery = "&" + string.Join("&", statusIds.Select(id => $"status[]={id}"));
+
+                while (true)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    var url = $"{BaseUrl}/orders?page={page}&per_page={perPage}{statusQuery}";
+
+                    var result = await client.GetAsync(url, ct);
+                    var content = await result.Content.ReadAsStringAsync(ct);
+                    if (!result.IsSuccessStatusCode) break;
+
+                    var json = JObject.Parse(content);
+                    var dataNode = json["data"];
+                    if (dataNode == null) break;
+
+                    var items = JsonConvert.DeserializeObject<List<OrderResultDto>>(dataNode.ToString());
+                    if (items == null || items.Count == 0) break;
+
+                    all.AddRange(items);
+
+                    var pagination = json["pagination"];
+                    var totalPages = pagination?["totalPages"]?.Value<int?>() ?? pagination?["total_pages"]?.Value<int?>();
+                    if (totalPages.HasValue && page >= totalPages.Value) break;
+                    if (items.Count < perPage) break;
+
+                    page++;
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                // swallow; return what we have
+            }
+
+            return all;
+        }
+
+        // GET /orders/{id} returns full details (items, shipments, pickup branch, customer groups) by default.
+        // Returning JObject because we don't yet have a typed schema for items/shipments.
+        public async Task<JObject> GetOrderDetailsRawAsync(long orderId, string token, CancellationToken ct = default)
+        {
+            try
+            {
+                var client = CreateDefaultClient(token);
+                var result = await client.GetAsync($"{BaseUrl}/orders/{orderId}", ct);
+                var content = await result.Content.ReadAsStringAsync(ct);
+                if (!result.IsSuccessStatusCode) return new JObject();
+
+                var json = JObject.Parse(content);
+                var data = json["data"] as JObject;
+                return data ?? json;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                return new JObject();
+            }
+        }
+
+        // Option-B orchestrator: in-memory snapshot of pending orders.
+        // Mirrors WordPress's GetListAllOrdersPendingAndAddToOffline, minus the DB writes.
+        // List + per-order detail enrichment so caller has line items to build invoices.
+        public async Task<PendingOrdersBatchDto> PullPendingOrdersAsync(string token, List<int> statusIds, bool includeDetails = true, CancellationToken ct = default)
+        {
+            var batch = new PendingOrdersBatchDto { StatusIds = statusIds ?? new List<int>() };
+            try
+            {
+                var orders = await GetAllOrdersByStatusAsync(token, statusIds, ct);
+                batch.Orders = orders;
+                batch.Count = orders.Count;
+
+                if (includeDetails)
+                {
+                    foreach (var order in orders)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        var detail = await GetOrderDetailsRawAsync(order.Id, token, ct);
+                        if (detail != null && detail.HasValues)
+                            batch.Details[order.Id] = detail;
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                batch.Message = e.Message;
+            }
+            return batch;
         }
 
         public async Task<SallaBaseResponse<CreateOrderResponseDto>> CreateOrderAsync(CreateOrderRequestDto request, string token)
@@ -131,6 +246,42 @@ namespace SallaStoreIntegration.Repositories.Order
             {
                 Console.WriteLine($"RelocateOrderStock Exception: {e}");
                 return CreateExceptionResponse<SallaBaseResponse<RelocateOrderStockResponseDto>>(e.Message);
+            }
+        }
+
+        public async Task<SallaBaseResponse<BulkOrdersStatusesResponseDto>> UpdateBulkOrdersStatusesAsync(UpdateBulkOrdersStatusesFormDto form, string token)
+        {
+            var validationResult = await new UpdateBulkOrdersStatusesValidator().ValidateAsync(form);
+            if (!validationResult.IsValid)
+            {
+                var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                throw new ValidationException(errors);
+            }
+
+            try
+            {
+                var client = CreateDefaultClient(token);
+
+                using var formData = new MultipartFormDataContent();
+                using var stream = form.File.OpenReadStream();
+                var fileContent = new StreamContent(stream);
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                formData.Add(fileContent, "file", form.File.FileName);
+
+                var result = await client.PostAsync($"{BaseUrl}/orders/statuses/bulk", formData);
+                var content = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"UpdateBulkOrdersStatuses Status: {result.StatusCode}");
+                Console.WriteLine($"UpdateBulkOrdersStatuses Response: {content}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<BulkOrdersStatusesResponseDto>>(content)
+                    ?? new SallaBaseResponse<BulkOrdersStatusesResponseDto> { Status = (int)result.StatusCode };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"UpdateBulkOrdersStatuses Exception: {e}");
+                return CreateExceptionResponse<SallaBaseResponse<BulkOrdersStatusesResponseDto>>(e.Message);
             }
         }
 
@@ -229,6 +380,113 @@ namespace SallaStoreIntegration.Repositories.Order
                 throw new Exception($"Salla Error: {content}");
 
             return content;
+        }
+
+        public async Task<SallaBaseResponse<OrderInvoiceResponseDto>> CreateOrderInvoiceAsync(long orderId, string token)
+        {
+            try
+            {
+                var client = CreateDefaultClient(token);
+                var result = await client.PostAsync($"{BaseUrl}/orders/{orderId}/print-invoice", null);
+                var content = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"CreateOrderInvoice Status: {result.StatusCode}");
+                Console.WriteLine($"CreateOrderInvoice Response: {content}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<OrderInvoiceResponseDto>>(content)
+                    ?? new SallaBaseResponse<OrderInvoiceResponseDto> { Status = (int)result.StatusCode };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"CreateOrderInvoice Exception: {e}");
+                return CreateExceptionResponse<SallaBaseResponse<OrderInvoiceResponseDto>>(e.Message);
+            }
+        }
+        public async Task<SallaBaseResponse<List<InvoiceDto>>> ListInvoicesAsync( string? fromDate, string? toDate, int? orderId, string token)
+        {
+            try
+            {
+                var client = CreateDefaultClient(token);
+
+                var query = new List<string>();
+                if (!string.IsNullOrEmpty(fromDate)) query.Add($"from_date={fromDate}");
+                if (!string.IsNullOrEmpty(toDate)) query.Add($"to_date={toDate}");
+                if (orderId.HasValue) query.Add($"order_id={orderId}");
+
+                var url = $"{BaseUrl}/orders/invoices";
+                if (query.Count > 0)
+                    url += "?" + string.Join("&", query);
+
+                var result = await client.GetAsync(url);
+                var content = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"ListInvoices Status: {result.StatusCode}");
+                Console.WriteLine($"ListInvoices Response: {content}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<List<InvoiceDto>>>(content)
+                    ?? new SallaBaseResponse<List<InvoiceDto>> { Status = (int)result.StatusCode };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"ListInvoices Exception: {e}");
+                return CreateExceptionResponse<SallaBaseResponse<List<InvoiceDto>>>(e.Message);
+            }
+        }
+
+        public async Task<SallaBaseResponse<InvoiceDetailsDto>> GetInvoiceDetailsAsync(long invoiceId, string token)
+        {
+            try
+            {
+                var client = CreateDefaultClient(token);
+                var result = await client.GetAsync($"{BaseUrl}/orders/invoices/{invoiceId}");
+                var content = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"GetInvoiceDetails Status: {result.StatusCode}");
+                Console.WriteLine($"GetInvoiceDetails Response: {content}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<InvoiceDetailsDto>>(content)
+                    ?? new SallaBaseResponse<InvoiceDetailsDto> { Status = (int)result.StatusCode };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"GetInvoiceDetails Exception: {e}");
+                return CreateExceptionResponse<SallaBaseResponse<InvoiceDetailsDto>>(e.Message);
+            }
+        }
+        public async Task<SallaBaseResponse<CreateInvoiceResponseDto>> CreateInvoiceAsync(CreateInvoiceDto dto,string token)
+        {
+            try
+            {
+                var client = CreateDefaultClient(token);
+
+                var json = JsonConvert.SerializeObject(dto);
+
+                var content = new StringContent(
+                    json,
+                    Encoding.UTF8,
+                    "application/json");
+
+                var result = await client.PostAsync(
+                    $"{BaseUrl}/orders/invoices",
+                    content);
+
+                var responseContent = await result.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"CreateInvoice Status: {result.StatusCode}");
+                Console.WriteLine($"CreateInvoice Response: {responseContent}");
+
+                return JsonConvert.DeserializeObject<SallaBaseResponse<CreateInvoiceResponseDto>>(responseContent)
+                       ?? new SallaBaseResponse<CreateInvoiceResponseDto>
+                       {
+                           Status = (int)result.StatusCode
+                       };
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"CreateInvoice Exception: {e}");
+
+                return CreateExceptionResponse<SallaBaseResponse<CreateInvoiceResponseDto>>(e.Message);
+            }
         }
     }
 }

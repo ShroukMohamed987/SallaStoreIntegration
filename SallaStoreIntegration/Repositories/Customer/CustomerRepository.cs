@@ -1,10 +1,13 @@
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+
+//using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SallaStoreIntegration.Dtos.Customers;
 using SallaStoreIntegration.Repositories.Base;
 using SallaStoreIntegration.Setting;
 using System.Text;
+using System.Text.Json;
 
 namespace SallaStoreIntegration.Repositories.Customer
 {
@@ -15,7 +18,25 @@ namespace SallaStoreIntegration.Repositories.Customer
         {
         }
 
-        public async Task<bool> CreateCustomerAsync(CreateCustomerDTO inputDto, string token)
+        //public async Task<bool> CreateCustomerAsync(CreateCustomerDTO inputDto, string token)
+        //{
+        //    try
+        //    {
+        //        var client = CreateClient(token);
+
+
+        //        var data = JsonSerializer.Serialize(inputDto);
+        //        var content = new StringContent(data, Encoding.UTF8, "application/json");
+
+        //        HttpResponseMessage response = await client.PostAsync("customers", content);
+        //        return response.IsSuccessStatusCode;
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
+        //}
+        public async Task<int?> CreateCustomerAsync(CreateCustomerDTO inputDto, string token)
         {
             try
             {
@@ -24,11 +45,18 @@ namespace SallaStoreIntegration.Repositories.Customer
                 var content = new StringContent(data, Encoding.UTF8, "application/json");
 
                 HttpResponseMessage response = await client.PostAsync("customers", content);
-                return response.IsSuccessStatusCode;
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<dynamic>(responseBody);
+
+                return result?.data?.id;
             }
             catch
             {
-                return false;
+                return null;
             }
         }
 
@@ -43,7 +71,7 @@ namespace SallaStoreIntegration.Repositories.Customer
                 {
                     string content = await response.Content.ReadAsStringAsync();
                     var resultJson = JObject.Parse(content);
-                    return JsonConvert.DeserializeObject<List<CustomerResponseDto>>(resultJson["data"].ToString());
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<List<CustomerResponseDto>>(resultJson["data"].ToString());
                 }
 
                 return new List<CustomerResponseDto>();
@@ -65,7 +93,7 @@ namespace SallaStoreIntegration.Repositories.Customer
                 {
                     var content = await response.Content.ReadAsStringAsync();
                     var jsonData = JObject.Parse(content);
-                    return JsonConvert.DeserializeObject<CustomerResponseDto>(jsonData["data"].ToString());
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<CustomerResponseDto>(jsonData["data"].ToString());
                 }
 
                 return new CustomerResponseDto();
@@ -81,7 +109,7 @@ namespace SallaStoreIntegration.Repositories.Customer
             try
             {
                 var client = CreateClient(token);
-                var data = JsonConvert.SerializeObject(inputDto);
+                var data = Newtonsoft.Json.JsonConvert.SerializeObject(inputDto);
                 var content = new StringContent(data, Encoding.UTF8, "application/json");
 
                 HttpResponseMessage response = await client.PutAsync($"customers/{id}", content);

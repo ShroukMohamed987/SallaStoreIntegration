@@ -4,7 +4,7 @@ namespace SallaStoreIntegration.Repositories.Customer
 {
     public interface ICustomerRepository
     {
-        Task<bool> CreateCustomerAsync(CreateCustomerDTO inputDto, string token);
+        Task<int?> CreateCustomerAsync(CreateCustomerDTO inputDto, string token);
         Task<List<CustomerResponseDto>> GetCustomerListAsync(string token);
         Task<CustomerResponseDto> GetCustomerByIdAsync(string token, int id);
         Task<bool> UpdateCustomerAsync(string token, int id, CreateCustomerDTO inputDto);

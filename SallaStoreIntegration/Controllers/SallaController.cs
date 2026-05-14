@@ -327,6 +327,22 @@ namespace DexefExternalStores.API.Controllers
             return Ok(result);
         }
 
+        // Pulls every page of orders for the given status and returns them in one snapshot.
+        // Caller is responsible for creating invoices / customers offline.
+        // Pulls every page of orders matching the given status IDs and (by default) enriches each
+        // with GET /orders/{id} so the caller has line items / shipments to build invoices.
+        // Pass status IDs from Salla's order status list; multiple allowed: ?statusIds=1&statusIds=2.
+        [HttpGet("PullPendingOrders")]
+        public async Task<IActionResult> PullPendingOrders(
+            [FromQuery] string token,
+            [FromQuery] List<int> statusIds,
+            [FromQuery] bool includeDetails = true,
+            CancellationToken ct = default)
+        {
+            var result = await _orderRepository.PullPendingOrdersAsync(token, statusIds, includeDetails, ct);
+            return Ok(result);
+        }
+
         [HttpGet("GetOrder/{orderId}")]
         public async Task<IActionResult> GetOrder(long orderId, [FromQuery] string token)
         {
@@ -359,6 +375,56 @@ namespace DexefExternalStores.API.Controllers
             [FromQuery] string token)
         {
             var result = await _orderRepository.RelocateOrderStockAsync(inputDto, orderId, token);
+            return Ok(result);
+        }
+
+        [HttpPost("UpdateBulkOrdersStatuses")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UpdateBulkOrdersStatuses(
+            [FromForm] UpdateBulkOrdersStatusesFormDto form,
+            [FromQuery] string token)
+        {
+            var result = await _orderRepository.UpdateBulkOrdersStatusesAsync(form, token);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateOrderInvoice/{orderId}")]
+        public async Task<IActionResult> CreateOrderInvoice(
+            long orderId,
+            [FromQuery] string token)
+        {
+            var result = await _orderRepository.CreateOrderInvoiceAsync(orderId, token);
+            return Ok(result);
+        }
+
+        [HttpGet("ListInvoices")]
+        public async Task<IActionResult> ListInvoices(
+            [FromQuery] string? fromDate,
+            [FromQuery] string? toDate,
+            [FromQuery] int? orderId,
+            [FromQuery] string token)
+        {
+            var result = await _orderRepository.ListInvoicesAsync(fromDate, toDate, orderId, token);
+            return Ok(result);
+        }
+
+        [HttpGet("GetInvoiceDetails/{invoiceId}")]
+        public async Task<IActionResult> GetInvoiceDetails(long invoiceId, [FromQuery] string token)
+        {
+            var result = await _orderRepository.GetInvoiceDetailsAsync(invoiceId, token);
+            return Ok(result);
+        }
+
+        [HttpPost("CreateInvoice")]
+        public async Task<IActionResult> CreateInvoice(CreateInvoiceDto dto, string token)
+        {
+            var result = await _orderRepository.CreateInvoiceAsync(dto, token);
+            return Ok(result);
+        }
+        [HttpPost("UpdateOrderStatus")]
+        public async Task<IActionResult> UpdateOrderStatus(string token, int id, UpdateOrderStatusInputDto inputDto)
+        {
+            var result = await _orderRepository.UpdateOrderStatusAsync(token,id,inputDto);
             return Ok(result);
         }
         #endregion
@@ -396,7 +462,9 @@ namespace DexefExternalStores.API.Controllers
 
         #region Customers
         [HttpPost("customers")]
-        public async Task<IActionResult> CreateCustomer(string token, CreateCustomerDTO inputDto)
+        public async Task<IActionResult> CreateCustomer(
+     [FromQuery] string token,
+     [FromBody] CreateCustomerDTO inputDto)
         {
             return Ok(await _customerRepository.CreateCustomerAsync(inputDto, token));
         }

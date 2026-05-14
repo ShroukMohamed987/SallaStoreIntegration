@@ -381,6 +381,31 @@ namespace SallaStoreIntegration.Dtos.Orders
         public string Message { get; set; }
     }
 
+    // Snapshot returned to a caller that will create invoices/customers offline themselves.
+    // Mirrors what WordPress's GetListAllOrdersPendingAndAddToOffline returns, but without DB.
+    public class PendingOrdersBatchDto
+    {
+        [JsonPropertyName("status_ids")]
+        public List<int> StatusIds { get; set; } = new();
+
+        [JsonPropertyName("count")]
+        public int Count { get; set; }
+
+        [JsonPropertyName("pages_fetched")]
+        public int PagesFetched { get; set; }
+
+        [JsonPropertyName("orders")]
+        public List<OrderResultDto> Orders { get; set; } = new();
+
+        // Raw GET /orders/{id} JSON keyed by order id. Includes line items, shipments, etc.
+        // Until we have a typed schema, the caller reads what it needs from here.
+        [JsonPropertyName("details")]
+        public Dictionary<long, Newtonsoft.Json.Linq.JObject> Details { get; set; } = new();
+
+        [JsonPropertyName("message")]
+        public string Message { get; set; }
+    }
+
     public class BulkActionResultDto
     {
         [JsonPropertyName("operation_id")]

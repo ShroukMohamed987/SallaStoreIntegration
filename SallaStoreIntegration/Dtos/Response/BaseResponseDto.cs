@@ -23,24 +23,40 @@ namespace SallaStoreIntegration.Dtos.Response
     }
     public class SallaBaseResponse<T>
     {
-        [JsonPropertyName("status")]
         [JsonProperty("status")]
         public int Status { get; set; }
 
-        [JsonPropertyName("success")]
         [JsonProperty("success")]
         public bool Success { get; set; }
 
-        [JsonPropertyName("data")]
         [JsonProperty("data")]
         public T? Data { get; set; }
 
-        //[JsonPropertyName("errors")]
-        //[JsonProperty("errors")]
-        //public object? Errors { get; set; }
+        [JsonProperty("errors")]
+        public object? Errors { get; set; }
 
-        [JsonPropertyName("error")]
-        [JsonProperty("error")]
-        public SallaErrorDto? Error { get; set; }
+        [JsonProperty("pagination")] 
+        public PaginationDto? Pagination { get; set; }
+    }
+
+    public class PaginationDto
+    {
+        [JsonProperty("count")]
+        public int Count { get; set; }
+
+        [JsonProperty("total")]
+        public int Total { get; set; }
+
+        [JsonProperty("perPage")]
+        public int PerPage { get; set; }
+
+        [JsonProperty("currentPage")]
+        public int CurrentPage { get; set; }
+
+        [JsonProperty("totalPages")]
+        public int TotalPages { get; set; }
+
+        [JsonProperty("links")]
+        public List<object>? Links { get; set; }
     }
 }

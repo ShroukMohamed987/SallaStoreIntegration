@@ -1,25 +1,27 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace SallaStoreIntegration.Dtos.Customers
 {
+    
     public class CreateCustomerDTO
     {
-        [JsonProperty("first_name")]
-        public string FirstName { get; set; }
+        [JsonPropertyName("first_name")]
+        public string first_name { get; set; }
 
-        [JsonProperty("last_name")]
-        public string LastName { get; set; }
+        [JsonPropertyName("last_name")]
+        public string last_name { get; set; }
 
-        [JsonProperty("mobile")]
-        public string Mobile { get; set; }
+        [JsonPropertyName("mobile")]
+        public string mobile { get; set; }
 
-        [JsonProperty("mobile_code_country")]
-        public string? MobileCodeCountry { get; set; }
+        [JsonPropertyName("mobile_code_country")]
+        public string? mobile_code_country { get; set; }
 
-        [JsonProperty("email")]
-        public string? Email { get; set; }
-        [JsonProperty("groups")]
-        public List<string?>? Groups { get; set; }
+        [JsonPropertyName("email")]
+        public string? email { get; set; }
+
+        [JsonPropertyName("groups")]
+        public List<string?>? groups { get; set; }
     }
 }
 
